@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HD Hubla - Video Streaming Platform</title>
+  <style>
+    /* Reset and base */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      background-color: #141414;
+      color: #fff;
+      overflow-x: hidden;
+    }
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+    /* Header */
+    header {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      height: 60px;
+      background: rgba(20, 20, 20, 0.85);
+      display: flex;
+      align-items: center;
+      padding: 0 30px;
+      z-index: 1000;
+      border-bottom: 1px solid #444;
+    }
+    .logo {
+      font-family: 'Bebas Neue', cursive;
+      font-size: 28px;
+      font-weight: bold;
+      color: #e50914;
+      user-select: none;
+    }
+    /* Welcome screen */
+    #welcome-screen {
+      position: fixed;
+      inset: 0;
+      background: #141414;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      transition: opacity 0.5s ease;
+    }
+    #welcome-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #welcome-screen h1 {
+      font-size: 48px;
+      margin-bottom: 20px;
+      color: #e50914;
+    }
+    #welcome-screen input {
+      font-size: 20px;
+      padding: 12px 18px;
+      border: none;
+      border-radius: 5px;
+      outline: none;
+      width: 280px;
+      max-width: 80vw;
+      margin-bottom: 20px;
+    }
+    #welcome-screen button {
+      background-color: #e50914;
+      border: none;
+      color: white;
+      font-weight: bold;
+      font-size: 18px;
+      padding: 12px 24px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      width: 300px;
+      max-width: 80vw;
+    }
+    #welcome-screen button:hover {
+      background-color: #f40612;
+    }
+    /* Main content */
+    main {
+      padding-top: 70px;
+      padding-left: 30px;
+      padding-right: 30px;
+      max-width: 1400px;
+      margin: 0 auto 50px auto;
+    }
+    /* Upload Section */
+    #upload-section {
+      background-color: #222;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+    }
+    #upload-section h2 {
+      color: #e50914;
+      margin-bottom: 12px;
+      user-select: none;
+    }
+    #file-input {
+      margin-bottom: 12px;
+      color: #ccc;
+    }
+    #upload-btn {
+      background-color: #e50914;
+      border: none;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      padding: 10px 18px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      user-select: none;
+    }
+    #upload-btn:hover {
+      background-color: #f40612;
+    }
+    /* Section title */
+    .section-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 20px 0 10px 0;
+      border-left: 5px solid #e50914;
+      padding-left: 10px;
+      user-select: none;
+    }
+    /* Rows container for horizontal scroll */
+    .row {
+      display: flex;
+      overflow-x: auto;
+      padding-bottom: 10px;
+      scrollbar-width: none; /* Firefox */
+    }
+    .row::-webkit-scrollbar {
+      display: none; /* Safari and Chrome */
+    }
+    /* Each media item */
+    .media-item {
+      flex: 0 0 auto;
+      width: 160px;
+      margin-right: 14px;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+      position: relative;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgb(0 0 0 / 0.8);
+      background-color: #222;
+      user-select: none;
+    }
+    .media-item:hover {
+      transform: scale(1.15);
+      z-index: 10;
+      box-shadow: 0 8px 16px rgb(229 9 20 / 0.8);
+    }
+    .media-thumb {
+      width: 100%;
+      display: block;
+      object-fit: cover;
+      height: 90px;
+      background: black;
+    }
+    .media-title {
+      padding: 8px 6px;
+      font-size: 14px;
+      color: white;
+      text-align: center;
+      height: 38px;
+      overflow: hidden;
+    }
+    /* Player overlay */
+    #player-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0,0,0,0.9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 3000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      flex-direction: column;
+      padding: 20px;
+    }
+    #player-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #video-player {
+      max-width: 90vw;
+      max-height: 80vh;
+      border-radius: 10px;
+      background: black;
+      box-shadow: 0 0 20px #e50914;
+    }
+    #player-close-btn {
+      margin-top: 16px;
+      background: #e50914;
+      border: none;
+      color: white;
+      font-weight: bold;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.3s ease;
+    }
+    #player-close-btn:hover {
+      background-color: #f40612;
+    }
+    /* Responsive for smaller screens */
+    @media (max-width: 600px) {
+      .media-item {
+        width: 120px;
+        margin-right: 10px;
+      }
+      .media-thumb {
+        height: 70px;
+      }
+      .media-title {
+        font-size: 12px;
+        height: auto;
+      }
+      #upload-btn {
+        width: 100%;
+      }
+      #welcome-screen h1 {
+        font-size: 32px;
+      }
+      #welcome-screen input, #welcome-screen button {
+        width: 90vw;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">HD Hubla</div>
+  </header>
+
+  <div id="welcome-screen">
+    <h1>Welcome to HD Hubla</h1>
+    <input type="text" id="username-input" placeholder="Enter your name" autocomplete="off" />
+    <button id="start-btn">Let's Watch!</button>
+  </div>
+
+  <main id="main-content" style="display:none">
+    <section id="upload-section" aria-label="Host Video Upload">
+      <h2>Upload Your Video (Host Only)</h2>
+      <input type="file" id="file-input" accept="video/*" aria-label="Choose video file" />
+      <button id="upload-btn">Upload Video</button>
+      <p style="font-size: 13px; color: #bbb; margin-top: 8px;">Uploaded videos play immediately in this browser session</p>
+    </section>
+
+    <section>
+      <h2 class="section-title">Movies</h2>
+      <div class="row" id="movies-row" aria-label="Movies"></div>
+    </section>
+    <section>
+      <h2 class="section-title">Web Series</h2>
+      <div class="row" id="webseries-row" aria-label="Web Series"></div>
+    </section>
+    <section>
+      <h2 class="section-title">Documentaries</h2>
+      <div class="row" id="doc-row" aria-label="Documentaries"></div>
+    </section>
+    <section>
+      <h2 class="section-title">TV Shows</h2>
+      <div class="row" id="tv-row" aria-label="TV Shows"></div>
+    </section>
+    <section>
+      <h2 class="section-title">Anime</h2>
+      <div class="row" id="anime-row" aria-label="Anime"></div>
+    </section>
+
+    <section>
+      <h2 class="section-title">Uploaded Videos</h2>
+      <div class="row" id="uploads-row" aria-label="Uploaded videos"></div>
+    </section>
+  </main>
+
+  <div id="player-overlay" aria-hidden="true">
+    <video id="video-player" controls></video>
+    <button id="player-close-btn" aria-label="Close video player">Close</button>
+  </div>
+
+  <script>
+    // Sample predefined media data for various categories
+    const mediaData = {
+      movies: [
+        {
+          title: "The Batman",
+          thumb: "https://image.tmdb.org/t/p/w200/qmDpIHrmpJINaRKAfWQfftjCdyi.jpg",
+          video: "https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4"
+        },
+        {
+          title: "Game of Thrones (Trailer)",
+          thumb: "https://upload.wikimedia.org/wikipedia/en/d/d8/Game_of_Thrones_title_card.jpg",
+          video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+        },
+        {
+          title: "The Boys (Trailer)",
+          thumb: "https://upload.wikimedia.org/wikipedia/en/6/65/The_Boys_Logo.png",
+          video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4"
+        },
+        {
+          title: "Batman Begins (Trailer)",
+          thumb: "https://upload.wikimedia.org/wikipedia/en/8/8a/Batman_Begins_Poster.jpg",
+          video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4"
+        }
+      ],
+      webseries: [
+        {
+          title: "Money Heist",
+          thumb: "https://upload.wikimedia.org/wikipedia/en/7/7a/Money_Heist_Part_3.jpg",
+          video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+        },
+        {
+          title: "Stranger Things",
+          thumb: "https://upload.wikimedia.org/wikipedia/en/f/f7/Stranger_Things_season_4.jpg",
+          video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4"
+        }
+      ],
+      documentaries: [
+        {
+          title: "Planet Earth",
+          thumb: "https://upload.wikimedia.org/wikipedia/en/f/f1/Planet_Earth_Documentary.jpg",
+          video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4"
+        },
+        {
+          title: "The Last Dance",
+          thumb: "https://upload.wikimedia.org/wikipedia/en/a/a6/The_Last_Dance.jpg",
+          video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4"
+        }
+      ],
+      tvshows: [
+        {
+          title: "Breaking Bad",
+          thumb: "https://upload.wikimedia.org/wikipedia/en/6/61/Breaking_Bad_title_card.png",
+          video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4"
+        },
+        {
+          title: "Friends",
+          thumb: "https://upload.wikimedia.org/wikipedia/en/f/f7/Friends_tv_show_logo.svg",
+          video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4"
+        }
+      ],
+      anime: [
+        {
+          title: "Naruto",
+          thumb: "https://upload.wikimedia.org/wikipedia/en/9/94/NarutoCoverTankobon1.jpg",
+          video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4"
+        },
+        {
+          title: "One Piece",
+          thumb: "https://upload.wikimedia.org/wikipedia/en/6/65/One_Piece_Logo.svg",
+          video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+        }
+      ]
+    };
+
+    // Store uploaded videos in local array and optionally in localStorage for persistence
+    let uploadedVideos = [];
+
+    // DOM elements
+    const welcomeScreen = document.getElementById('welcome-screen');
+    const startBtn = document.getElementById('start-btn');
+    const usernameInput = document.getElementById('username-input');
+    const mainContent = document.getElementById('main-content');
+    const playerOverlay = document.getElementById('player-overlay');
+    const videoPlayer = document.getElementById('video-player');
+    const playerCloseBtn = document.getElementById('player-close-btn');
+    const fileInput = document.getElementById('file-input');
+    const uploadBtn = document.getElementById('upload-btn');
+
+    // Function to populate media row with items
+    function populateRow(rowId, items) {
+      const row = document.getElementById(rowId);
+      row.innerHTML = '';
+      items.forEach(item => {
+        const div = document.createElement('div');
+        div.classList.add('media-item');
+        div.tabIndex = 0;
+        div.setAttribute('role', 'button');
+        div.setAttribute('aria-label', 'Play ' + item.title);
+        div.innerHTML = `
+          <img src="${item.thumb || 'https://via.placeholder.com/160x90?text=No+Thumbnail'}" alt="${item.title} thumbnail" class="media-thumb" />
+          <div class="media-title">${item.title}</div>
+        `;
+        div.addEventListener('click', () => {
+          openPlayer(item.video, item.title);
+        });
+        div.addEventListener('keyup', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            openPlayer(item.video, item.title);
+          }
+        });
+        row.appendChild(div);
+      });
+    }
+
+    // Open video player overlay and play
+    function openPlayer(videoUrl, title) {
+      videoPlayer.src = videoUrl;
+      videoPlayer.title = title;
+      playerOverlay.classList.add('active');
+      playerOverlay.setAttribute('aria-hidden', 'false');
+      videoPlayer.play().catch(() => {});
+    }
+
+    // Close player overlay
+    function closePlayer() {
+      videoPlayer.pause();
+      videoPlayer.currentTime = 0;
+      videoPlayer.src = '';
+      playerOverlay.classList.remove('active');
+      playerOverlay.setAttribute('aria-hidden', 'true');
+    }
+
+    // Start app after user enters name
+    function startApp() {
+      const username = usernameInput.value.trim();
+      if (username.length === 0) {
+        alert('Please enter your name to continue.');
+        return;
+      }
+      localStorage.setItem('hdhubla_username', username);
+      welcomeScreen.classList.add('hidden');
+      setTimeout(() => {
+        welcomeScreen.style.display = 'none';
+        mainContent.style.display = 'block';
+        loadContent();
+        loadUploadedVideosFromStorage();
+      }, 500);
+    }
+
+    // Upload new video from file input
+    function handleUpload() {
+      const files = fileInput.files;
+      if (!files || files.length === 0) {
+        alert('Please select a video file to upload.');
+        return;
+      }
+      const file = files[0];
+      if (file.type.indexOf('video') === -1) {
+        alert('Please upload a valid video file.');
+        return;
+      }
+
+      // Create URL object for video playback
+      const videoUrl = URL.createObjectURL(file);
+      const newVideo = {
+        title: file.name,
+        video: videoUrl,
+        thumb: '', // Placeholder thumbnail used
+      };
+      uploadedVideos.push(newVideo);
+      saveUploadedVideosToStorage();
+      populateRow('uploads-row', uploadedVideos);
+
+      // Clear file input after upload
+      fileInput.value = "";
+      alert('Video uploaded successfully! You can watch it below in "Uploaded Videos".');
+    }
+
+    // Save uploaded videos metadata to localStorage to persist on reload (videos themselves won't persist)
+    function saveUploadedVideosToStorage() {
+      // We cannot persist Blob URLs; so only store metadata titles here for UX (videos won't load on reload)
+      const titles = uploadedVideos.map(v => v.title);
+      localStorage.setItem('hdhubla_uploaded_titles', JSON.stringify(titles));
+      // Uploaded videos will reload only in current session due to URL.createObjectURL
+    }
+
+    // Load uploaded videos metadata from storage (video URLs won't persist, so show placeholder)
+    function loadUploadedVideosFromStorage() {
+      const storedTitles = JSON.parse(localStorage.getItem('hdhubla_uploaded_titles') || '[]');
+      if (storedTitles.length > 0) {
+        // On reload uploaded videos can't have URL blobs anymore, so show placeholder with titles only
+        uploadedVideos = storedTitles.map(title => ({ title, video: '', thumb: '' }));
+        populateRow('uploads-row', uploadedVideos);
+      }
+    }
+
+    // Load all predefined content categories
+    function loadContent() {
+      populateRow('movies-row', mediaData.movies);
+      populateRow('webseries-row', mediaData.webseries);
+      populateRow('doc-row', mediaData.documentaries);
+      populateRow('tv-row', mediaData.tvshows);
+      populateRow('anime-row', mediaData.anime);
+      populateRow('uploads-row', uploadedVideos);
+    }
+
+    // Initialize app with username check (skip welcome screen if set)
+    function init() {
+      const storedName = localStorage.getItem('hdhubla_username');
+      if (storedName && storedName.length > 0) {
+        welcomeScreen.classList.add('hidden');
+        setTimeout(() => {
+          welcomeScreen.style.display = 'none';
+          mainContent.style.display = 'block';
+          loadUploadedVideosFromStorage();
+          loadContent();
+        }, 300);
+      }
+    }
+
+    // Listeners
+    startBtn.addEventListener('click', startApp);
+    usernameInput.addEventListener('keyup', e => {
+      if (e.key === 'Enter') startApp();
+    });
+    uploadBtn.addEventListener('click', handleUpload);
+    playerCloseBtn.addEventListener('click', closePlayer);
+    playerOverlay.addEventListener('click', e => {
+      if (e.target === playerOverlay) closePlayer();
+    });
+
+    init();
+  </script>
+</body>
+</html>
+
